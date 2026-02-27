@@ -9,17 +9,28 @@ saveToken();
 const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
 const API_KEY_TITLE = "api-cuentas-token"
 
+const anioSeleccionado = ref(new Date().getFullYear())
 const mesSeleccionado = ref(meses[new Date().getMonth()])
 const diaSeleccionado = ref(new Date().getDate())
 
+const aniosDisponibles = computed(() => {
+  const currentYear = new Date().getFullYear()
+  return Array.from({ length: 100 }, (_, i) => currentYear - 50 + i)
+})
+
 const diasDelMes = computed(() => {
   const mesIndex = meses.indexOf(mesSeleccionado.value ? mesSeleccionado.value : '');
-  const year = new Date().getFullYear()
-  const totalDias = new Date(year, mesIndex + 1, 0).getDate()
+  const totalDias = new Date(anioSeleccionado.value, mesIndex + 1, 0).getDate()
   return Array.from({ length: totalDias }, (_, i) => i + 1)
 })
 
 function onMesChange() {
+  if (diaSeleccionado.value > diasDelMes.value.length) {
+    diaSeleccionado.value = diasDelMes.value.length
+  }
+}
+
+function onAnioChange() {
   if (diaSeleccionado.value > diasDelMes.value.length) {
     diaSeleccionado.value = diasDelMes.value.length
   }
@@ -58,6 +69,7 @@ async function handleSubmit() {
   loading.value = true
   result.value = ''
 
+  console.log('Imprimimos: ' + anioSeleccionado.value)
   console.log('Imprimimos: ' + mesSeleccionado.value)
   console.log('Imprimimos: ' + diaSeleccionado.value)
   console.log('Imprimimos: ' + tipoGasto.value)
@@ -66,6 +78,7 @@ async function handleSubmit() {
 
   const payload = {
     token: token.value,
+    anio: anioSeleccionado.value,
     mes: mesSeleccionado.value,
     dia: diaSeleccionado.value,
     tipoGasto: tipoGasto.value,
@@ -123,6 +136,12 @@ async function handleSubmit() {
           <form @submit.prevent="handleSubmit">
             <div class="row">
               <div class="col">
+                <label for="anio">Año:</label>
+                <select id="anio" v-model="anioSeleccionado" @change="onAnioChange">
+                  <option v-for="anio in aniosDisponibles" :key="anio" :value="anio">{{ anio }}</option>
+                </select>
+              </div>
+              <div class="col">
                 <label for="mes">Mes:</label>
                 <select id="mes" v-model="mesSeleccionado" @change="onMesChange">
                   <option v-for="mes in meses" :key="mes" :value="mes">{{ mes }}</option>
@@ -166,7 +185,7 @@ async function handleSubmit() {
             <input id="concepto" type="text" v-model="concepto" required placeholder="Ej: Café con leche" />
 
             <label for="cantidad">Cantidad:</label>
-            <input id="cantidad" type="number" v-model="cantidad" required placeholder="0.00€" />
+            <input id="cantidad" type="number" v-model="cantidad" required placeholder="0.00€" step="0.01" />
 
             <div class="button-row">
               <button type="button" class="reset-btn" @click="resetToken">↺</button>
@@ -231,10 +250,16 @@ form {
 }
 
 .col {
-  flex: 1;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+}
+
+.col select {
+  font-size: 0.8rem;
+  padding: 8px 10px;
 }
 
 .top-header {
